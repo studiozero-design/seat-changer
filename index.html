@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>자리 뽑기</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+      background: #f5f6fa;
+      color: #1a1a2e;
+      min-height: 100vh;
+      padding: 40px 16px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 32px;
+      letter-spacing: -0.5px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+
+    .card label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 160px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+      line-height: 1.7;
+    }
+    textarea:focus { border-color: #4f46e5; }
+
+    .grid-inputs {
+      display: flex;
+      gap: 16px;
+    }
+
+    .grid-inputs .field {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .grid-inputs label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #555;
+      letter-spacing: 0.5px;
+    }
+
+    .grid-inputs input[type="number"] {
+      width: 100%;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      -moz-appearance: textfield;
+    }
+    .grid-inputs input[type="number"]::-webkit-inner-spin-button,
+    .grid-inputs input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
+    .grid-inputs input[type="number"]:focus { border-color: #4f46e5; }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    button {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    button:active { transform: scale(0.97); }
+
+    #btn-draw {
+      background: #4f46e5;
+      color: #fff;
+    }
+    #btn-draw:hover { background: #4338ca; }
+
+    #btn-redraw {
+      background: #e9e8ff;
+      color: #4f46e5;
+      display: none;
+    }
+    #btn-redraw:hover { background: #d5d3fc; }
+
+    .error {
+      font-size: 0.88rem;
+      color: #e53e3e;
+      margin-top: 8px;
+      min-height: 20px;
+    }
+
+    #result-section { display: none; }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .result-header h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .badge {
+      font-size: 0.82rem;
+      background: #ede9fe;
+      color: #4f46e5;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .seat-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .seat {
+      background: #f9f9ff;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 12px 8px;
+      text-align: center;
+      font-size: 0.95rem;
+      font-weight: 500;
+      min-height: 56px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .seat.occupied {
+      background: #ede9fe;
+      border-color: #c4b5fd;
+      color: #3730a3;
+      font-weight: 700;
+    }
+
+    .seat.empty {
+      color: #bbb;
+      font-size: 0.8rem;
+    }
+
+    .seat-number {
+      font-size: 0.65rem;
+      color: #999;
+      margin-bottom: 3px;
+      font-weight: 400;
+    }
+    .seat.occupied .seat-number { color: #7c3aed88; }
+
+    .board-label {
+      text-align: center;
+      font-size: 0.78rem;
+      color: #888;
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎲 자리 뽑기</h1>
+
+  <div class="container">
+    <div class="card">
+      <label>학생 이름 (한 줄에 한 명)</label>
+      <textarea id="names" placeholder="김민준&#10;이서연&#10;박지호&#10;최수아&#10;..."></textarea>
+    </div>
+
+    <div class="card">
+      <div class="grid-inputs">
+        <div class="field">
+          <label>가로 줄 수 (열)</label>
+          <input type="number" id="cols" min="1" max="20" value="5" />
+        </div>
+        <div class="field">
+          <label>세로 줄 수 (행)</label>
+          <input type="number" id="rows" min="1" max="20" value="5" />
+        </div>
+      </div>
+      <div class="error" id="error-msg"></div>
+    </div>
+
+    <div class="btn-row">
+      <button id="btn-draw">자리 뽑기</button>
+      <button id="btn-redraw">다시 뽑기</button>
+    </div>
+
+    <div class="card" id="result-section">
+      <div class="result-header">
+        <h2>배치 결과</h2>
+        <span class="badge" id="result-badge"></span>
+      </div>
+      <div class="board-label">▲ 칠판</div>
+      <div class="seat-grid" id="seat-grid"></div>
+    </div>
+  </div>
+
+  <script>
+    const btnDraw   = document.getElementById('btn-draw');
+    const btnRedraw = document.getElementById('btn-redraw');
+    const errorMsg  = document.getElementById('error-msg');
+    const resultSection = document.getElementById('result-section');
+    const seatGrid  = document.getElementById('seat-grid');
+    const resultBadge = document.getElementById('result-badge');
+
+    function getNames() {
+      return document.getElementById('names').value
+        .split('\n')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+    }
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function draw() {
+      errorMsg.textContent = '';
+      const names = getNames();
+      const cols  = parseInt(document.getElementById('cols').value, 10);
+      const rows  = parseInt(document.getElementById('rows').value, 10);
+
+      if (names.length === 0) {
+        errorMsg.textContent = '학생 이름을 입력해주세요.';
+        return;
+      }
+      if (!cols || cols < 1 || !rows || rows < 1) {
+        errorMsg.textContent = '가로/세로 줄 수를 1 이상으로 입력해주세요.';
+        return;
+      }
+      const seats = cols * rows;
+      if (names.length > seats) {
+        errorMsg.textContent = `학생 수(${names.length}명)가 자리 수(${seats}칸)보다 많습니다.`;
+        return;
+      }
+
+      const shuffled = shuffle(names);
+      const grid = Array.from({ length: seats }, (_, i) => shuffled[i] ?? null);
+
+      seatGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      seatGrid.innerHTML = '';
+
+      grid.forEach((name, i) => {
+        const cell = document.createElement('div');
+        cell.className = 'seat ' + (name ? 'occupied' : 'empty');
+
+        const num = document.createElement('div');
+        num.className = 'seat-number';
+        num.textContent = `${i + 1}번`;
+
+        const nameEl = document.createElement('div');
+        nameEl.textContent = name ?? '빈 자리';
+
+        cell.appendChild(num);
+        cell.appendChild(nameEl);
+        seatGrid.appendChild(cell);
+      });
+
+      resultBadge.textContent = `${names.length}명 / ${seats}자리`;
+      resultSection.style.display = 'block';
+      btnRedraw.style.display = 'block';
+      resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    btnDraw.addEventListener('click', draw);
+    btnRedraw.addEventListener('click', draw);
+  </script>
+</body>
+</html>
